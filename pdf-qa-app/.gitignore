@@ -1,0 +1,9 @@
+.env
+data/
+venv/
+.venv/
+.vscode/
+build/
+dist/
+faiss_index/
+chroma_db/
