@@ -7,3 +7,4 @@ build/
 dist/
 faiss_index/
 chroma_db/
+__pycache__/

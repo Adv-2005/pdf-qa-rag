@@ -5,6 +5,8 @@ from src.splitter import split_documents
 from src.vector_store import create_vector_store
 from src.qa_chain import build_chain
 from src.embeddings import get_embeddings
+from src.tools import set_retriever, pdf_search, set_qa_chain, rag_answer
+from src.tools import web_search
 
 UPLOAD_DIR = "data/uploaded_pdfs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -49,8 +51,14 @@ if pdf:
             chunks,
             embeddings
         )
+        retriever = vector_db.as_retriever(
+        search_kwargs={"k": 3}
+    )
+
+        set_retriever(retriever)
         qa_chain = build_chain(vector_db)
 
+        set_qa_chain(qa_chain)
         st.session_state.qa_chain = qa_chain
         st.success(
         f"PDF processed successfully! "
@@ -59,23 +67,34 @@ if pdf:
 question = st.text_input(
     "Ask a question"
 )
+if st.button("Test PDF Search Tool"):
 
-if question:
+    if question:
 
-    if st.session_state.qa_chain is None:
-        st.warning("Please upload a PDF first.")
-    else:
+        result = pdf_search.invoke(
+            {"query": question}
+        )
 
-        with st.spinner("Generating answer..."):
+        st.subheader("Retrieved Chunks")
 
-            response = st.session_state.qa_chain.invoke(
-                {"input": question}
-            )
+        st.write(result)
 
-        if isinstance(response, dict):
-            answer = response.get("answer", str(response))
-        else:
-            answer = str(response)
+if st.button("Test RAG Tool"):
 
-        st.subheader("Answer")
-        st.write(answer)
+    result = rag_answer.invoke(
+        {"question": question}
+    )
+
+    st.subheader("RAG Tool Output")
+
+    st.write(result)
+
+if st.button("Test Web Search Tool"):
+
+    result = web_search.invoke(
+        {"query": question}
+    )
+
+    st.subheader("Web Search Results")
+
+    st.write(result)
