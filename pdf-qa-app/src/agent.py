@@ -28,35 +28,38 @@ def build_agent():
     ]
 
     prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """
-You are a helpful assistant.
+    [
+        (
+            "system",
+            """
+You are assisting users with an uploaded PDF.
 
-Choose the correct tool:
+IMPORTANT:
+
+Assume that user questions refer to the uploaded PDF unless the user clearly asks for information outside the PDF.
+
+Tool Selection Rules:
 
 1. rag_answer
-   - Use when the user asks a question about the uploaded PDF.
-   - Return a final answer.
+   - Use for answering questions about the uploaded PDF.
+   - This should be your default choice.
 
 2. pdf_search
-   - Use when the user wants raw text, excerpts,
-     retrieved chunks, references, or relevant passages
-     from the PDF.
+   - Use when the user asks for exact text, passages, excerpts, references, or retrieved chunks from the PDF.
 
 3. web_search
-   - Use when the question requires current information
-     or information not available in the uploaded PDF.
+   - Use ONLY when:
+     * the user explicitly asks for current/latest information
+     * the question is clearly unrelated to the uploaded PDF
+     * the PDF tools cannot answer
 
-Always use a tool whenever appropriate.
-Do not make up answers.
+Always prefer PDF tools over web_search when a PDF is available.
 """
-            ),
-            ("human", "{input}"),
-            ("placeholder", "{agent_scratchpad}")
-        ]
-    )
+        ),
+        ("human", "{input}"),
+        ("placeholder", "{agent_scratchpad}")
+    ]
+)
 
     agent = create_tool_calling_agent(
         llm=llm,
