@@ -7,7 +7,7 @@ from langchain.chains.retrieval import create_retrieval_chain
 def build_chain(vector_db):
 
     llm = ChatOllama(
-        model="qwen2.5:1.5b",
+        model="gemma4:e4b",
         temperature=0
     )
 

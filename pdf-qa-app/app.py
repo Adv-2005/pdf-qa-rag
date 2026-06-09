@@ -7,12 +7,15 @@ from src.qa_chain import build_chain
 from src.embeddings import get_embeddings
 from src.tools import set_retriever, pdf_search, set_qa_chain, rag_answer
 from src.tools import web_search
+from src.agent import build_agent
 
 UPLOAD_DIR = "data/uploaded_pdfs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 if "qa_chain" not in st.session_state:
     st.session_state.qa_chain = None
+if "agent" not in st.session_state:
+    st.session_state.agent = None
 
 st.title("PDF Q&A App")
 st.set_page_config(
@@ -59,6 +62,9 @@ if pdf:
         qa_chain = build_chain(vector_db)
 
         set_qa_chain(qa_chain)
+        agent = build_agent()
+
+        st.session_state.agent = agent
         st.session_state.qa_chain = qa_chain
         st.success(
         f"PDF processed successfully! "
@@ -67,34 +73,58 @@ if pdf:
 question = st.text_input(
     "Ask a question"
 )
-if st.button("Test PDF Search Tool"):
+# if st.button("Test PDF Search Tool"):
 
-    if question:
+#     if question:
 
-        result = pdf_search.invoke(
-            {"query": question}
-        )
+#         result = pdf_search.invoke(
+#             {"query": question}
+#         )
 
-        st.subheader("Retrieved Chunks")
+#         st.subheader("Retrieved Chunks")
 
-        st.write(result)
+#         st.write(result)
 
-if st.button("Test RAG Tool"):
+# if st.button("Test RAG Tool"):
 
-    result = rag_answer.invoke(
-        {"question": question}
-    )
+#     result = rag_answer.invoke(
+#         {"question": question}
+#     )
 
-    st.subheader("RAG Tool Output")
+#     st.subheader("RAG Tool Output")
 
-    st.write(result)
+#     st.write(result)
 
-if st.button("Test Web Search Tool"):
+# if st.button("Test Web Search Tool"):
 
-    result = web_search.invoke(
-        {"query": question}
-    )
+#     result = web_search.invoke(
+#         {"query": question}
+#     )
 
-    st.subheader("Web Search Results")
+#     st.subheader("Web Search Results")
 
-    st.write(result)
+#     st.write(result)
+
+if st.button("Ask"):
+
+    if st.session_state.agent is None:
+        st.error("Please upload a PDF first.")
+
+    elif not question:
+        st.warning("Enter a question.")
+
+    else:
+
+        with st.spinner("Thinking..."):
+
+            response = st.session_state.agent.invoke(
+                {
+                    "input": question
+                }
+            )
+
+            st.subheader("Answer")
+
+            st.write(
+                response["output"]
+            )

@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
+from requests.exceptions import RequestException
 
 
 load_dotenv()
@@ -48,7 +49,7 @@ def set_qa_chain(chain):
 
 
 @tool
-def rag_answer(question: str) -> str:
+def rag_answer(query: str) -> str:
     """
     Answer questions using the uploaded PDF.
     Uses retrieval augmented generation (RAG).
@@ -58,7 +59,7 @@ def rag_answer(question: str) -> str:
         return "No PDF has been loaded."
 
     response = qa_chain.invoke(
-        {"input": question}
+        {"input": query}
     )
 
     return response.get(
@@ -75,15 +76,26 @@ def web_search(query: str) -> str:
     in the uploaded PDF or requires up-to-date data.
     """
 
+    api_key = os.getenv("SERP_API_KEY")
+    if not api_key:
+        return "Web search is unavailable because SERP_API_KEY is not set."
+
     params = {
         "engine": "google",
         "q": query,
-        "api_key": os.getenv("SERP_API_KEY")
+        "api_key": api_key,
     }
 
-    search = GoogleSearch(params)
-
-    results = search.get_dict()
+    try:
+        search = GoogleSearch(params)
+        results = search.get_dict()
+    except RequestException as exc:
+        return (
+            "Web search failed because the network request could not be completed. "
+            f"Details: {exc}"
+        )
+    except Exception as exc:
+        return f"Web search failed unexpectedly: {exc}"
 
     organic_results = results.get(
         "organic_results",
