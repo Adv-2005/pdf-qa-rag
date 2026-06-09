@@ -1,18 +1,20 @@
-import UploadPDF from "./components/UploadPDF";
-import ChatBox from "./components/ChatBox";
+import { useState } from "react";
+import Sidebar from "./components/Sidebar";
+import ChatWindow from "./components/ChatWindow";
 
 function App() {
 
+  const [messages, setMessages] = useState([]);
+
   return (
-    <div>
+    <div className="h-screen flex bg-gray-100">
 
-      <h1>
-        PDF Q&A Agent
-      </h1>
+      <Sidebar />
 
-      <UploadPDF />
-
-      <ChatBox />
+      <ChatWindow
+        messages={messages}
+        setMessages={setMessages}
+      />
 
     </div>
   );
