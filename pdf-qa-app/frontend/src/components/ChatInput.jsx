@@ -45,7 +45,9 @@ function ChatInput({
         const botMessage = {
           role: "assistant",
           content:
-            response.data.answer
+            response.data.answer,
+          source: response.data.source,
+          sources: response.data.sources
         };
 
         setMessages(

@@ -5,4 +5,6 @@ class GraphState(TypedDict):
     question: str
     documents: List[Document]
     relevance: str
+    route: str
     answer: str
+    sources: list

@@ -21,6 +21,8 @@ function ChatWindow({
               key={index}
               role={message.role}
               content={message.content}
+              source={message.source}
+              sources={message.sources}
             />
           )
         )}

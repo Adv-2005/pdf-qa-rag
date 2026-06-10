@@ -16,10 +16,21 @@ def retrieve_node(state: GraphState):
 
     docs = rag_resources.retriever.invoke(question)
 
-    print(f"Retrieved {len(docs)} docs")
+    sources = []
+
+    for doc in docs:
+
+        sources.append({
+            "page": doc.metadata.get(
+                "page",
+                "Unknown"
+            ),
+            "content": doc.page_content[:80]
+        })
 
     return {
-        "documents": docs
+        "documents": docs,
+        "sources": sources
     }
 
 def grade_documents(state: GraphState):
@@ -77,10 +88,11 @@ def rag_node(state: GraphState):
     )
 
     return {
-        "answer": result["answer"]
+        "answer": result["answer"],
+        "route": "rag"
     }
 
-def web_node(state):
+def web_node(state: GraphState):
     print("Using WEB SEARCH")
 
     question = state["question"]
@@ -104,5 +116,6 @@ Provide a concise and helpful answer.
     answer = llm.invoke(prompt).content
 
     return {
-        "answer": answer
+        "answer": answer,
+        "route": "web"
     }

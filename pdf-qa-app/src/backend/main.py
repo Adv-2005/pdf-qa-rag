@@ -93,5 +93,7 @@ async def chat(data: dict):
     )
 
     return {
-        "answer": response["answer"]
+        "answer": response["answer"],
+        "source": response["route"],
+        "sources": response["sources"]
     }
