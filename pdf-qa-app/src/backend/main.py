@@ -5,7 +5,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from src.tools import (
     set_retriever,
-    set_qa_chain
+    set_qa_chain,
 )
 from src.loader import load_pdf
 from src.splitter import split_documents
@@ -13,7 +13,8 @@ from src.vector_store import create_vector_store
 from src.embeddings import get_embeddings
 from src.qa_chain import build_chain
 from src.agent import build_agent
-
+import src.rag_resources as rag_resources
+from src.graph import graph
 
 app = FastAPI()
 agent = None
@@ -53,6 +54,8 @@ async def upload_pdf(file: UploadFile = File(...)):
         qa_chain = build_chain(vector_db)
         set_qa_chain(qa_chain)
         agent = build_agent()
+        rag_resources.retriever = retriever
+        rag_resources.qa_chain = qa_chain
 
         return {"message": "PDF uploaded successfully"}
     except ConnectionError as exc:
@@ -76,19 +79,19 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/chat")
 async def chat(data: dict):
-    if agent is None:
+    if rag_resources.retriever is None:
         return {
             "error": "Please upload a PDF first."
         }
 
     question = data["question"]
 
-    response = agent.invoke(
+    response = graph.invoke(
         {
-            "input": question
+            "question": question
         }
     )
 
     return {
-        "answer": response["output"]
+        "answer": response["answer"]
     }
