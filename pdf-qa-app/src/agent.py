@@ -17,7 +17,7 @@ from src.tools import (
 def build_agent():
 
     llm = ChatOllama(
-        model="gemma4:e4b",
+        model="qwen2.5:3b",
         temperature=0
     )
 
