@@ -1,4 +1,4 @@
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 import src.rag_resources as rag_resources
 from src.tools import web_search
 from src.graph_state import GraphState
@@ -9,13 +9,13 @@ import time
 class GradeDocuments(BaseModel):
     binary_score: Literal["yes", "no"]
 
-answer_llm = ChatOllama(
-    model="qwen2.5:3b",
+answer_llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
     temperature=0
 )
 
-grader_llm = ChatOllama(
-    model="qwen2.5:3b",
+grader_llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
     temperature=0
 )
 

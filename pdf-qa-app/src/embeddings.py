@@ -1,6 +1,6 @@
-from langchain_ollama import OllamaEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 def get_embeddings():
-    return OllamaEmbeddings(
-        model="nomic-embed-text"
+    return GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001"
     )
