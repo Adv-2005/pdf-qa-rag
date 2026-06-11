@@ -29,7 +29,7 @@ def build_chain(vector_db):
     )
 
     retriever = vector_db.as_retriever(
-        search_kwargs={"k": 3}
+        search_kwargs={"k": 8}
     )
 
     retrieval_chain = create_retrieval_chain(

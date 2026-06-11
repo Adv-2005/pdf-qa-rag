@@ -48,7 +48,13 @@ async def upload_pdf(file: UploadFile = File(...)):
         embeddings = get_embeddings()
         # Vector Store
         vector_db = create_vector_store(chunks, embeddings)
-        retriever = vector_db.as_retriever(search_kwargs={"k": 3})
+        retriever = vector_db.as_retriever(
+    search_type="mmr",
+    search_kwargs={
+        "k": 10,
+        "fetch_k": 30
+    }
+)
 
         set_retriever(retriever)
         qa_chain = build_chain(vector_db)

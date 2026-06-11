@@ -10,11 +10,13 @@ class GradeDocuments(BaseModel):
     binary_score: Literal["yes", "no"]
 
 answer_llm = ChatOllama(
-    model="qwen2.5:3b"
+    model="qwen2.5:3b",
+    temperature=0
 )
 
 grader_llm = ChatOllama(
-    model="qwen2.5:3b"
+    model="qwen2.5:3b",
+    temperature=0
 )
 
 structured_llm = grader_llm.with_structured_output(
@@ -28,9 +30,7 @@ def retrieve_node(state: GraphState):
     print(state["question"])
 
     question = state["question"]
-
     docs = rag_resources.retriever.invoke(question)
-
     sources = []
 
     for doc in docs:
@@ -55,20 +55,39 @@ def retrieve_node(state: GraphState):
 def grade_documents(state: GraphState):
     start = time.time()
 
+
     question = state["question"]
 
-    docs = state["documents"]
+    docs = state["documents"][:3]
+    print("\n=== DOCUMENTS BEING GRADED ===\n")
+
+    for i, doc in enumerate(state["documents"]):
+        print(
+        f"RANK {i+1}| PAGE: {doc.metadata.get('page')}"
+    )
+        print(doc.page_content[:300])
+        print("\n-------------------\n")
 
     context = "\n\n".join(
         [doc.page_content for doc in docs]
     )
-
+    print("\nQUESTION:")
+    print(question)
+    
+    print("\nCONTEXT:")
+    print(context)
     prompt = f"""
 You are a retrieval grader.
 
-Your job is to determine whether the retrieved
-documents contain enough information to answer
-the user's question.
+Your task is to determine whether ANY part of the
+retrieved context is relevant to answering the user's question.
+
+The context does NOT need to contain the complete answer.
+
+If at least one document contains information that would help answer the question,
+return "yes".
+
+Return "no" only if none of the retrieved context is relevant.
 
 Question:
 {question}
