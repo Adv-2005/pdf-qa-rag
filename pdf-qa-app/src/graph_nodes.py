@@ -6,8 +6,12 @@ from typing import Literal
 from pydantic import BaseModel
 import time
 
+
 class GradeDocuments(BaseModel):
     binary_score: Literal["yes", "no"]
+
+class GradeAnswer(BaseModel):
+    answer_found: Literal["yes", "no"]
 
 answer_llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
@@ -21,6 +25,9 @@ grader_llm = ChatGoogleGenerativeAI(
 
 structured_llm = grader_llm.with_structured_output(
     GradeDocuments
+)
+answer_grader_llm = grader_llm.with_structured_output(
+    GradeAnswer
 )
 
 def retrieve_node(state: GraphState):
@@ -121,7 +128,15 @@ def rag_node(state: GraphState):
     context = "\n\n".join(
         [doc.page_content for doc in state["documents"]]
     )
-    prompt = f"""Answer the question using the context.
+    prompt = f"""You are a question answering assistant.
+
+Answer ONLY using the provided context.
+
+If the answer cannot be found in the context,
+respond exactly with:
+
+INSUFFICIENT_INFORMATION
+
 
 Question:
 {question}
@@ -150,15 +165,19 @@ def web_node(state: GraphState):
     )
 
     prompt = f"""
-Answer the user's question using the web search results.
+Answer the user's question using ONLY the search results.
+
+If the search results do not contain enough information
+to answer the question, respond exactly with:
+
+INSUFFICIENT_INFORMATION
+
 
 Question:
 {question}
 
 Search Results:
 {search_results}
-
-Provide a concise and helpful answer.
 """
 
     answer = answer_llm.invoke(prompt).content
@@ -169,4 +188,26 @@ Provide a concise and helpful answer.
     return {
         "answer": answer,
         "route": "web"
+    }
+
+def answer_validation_node(state: GraphState):
+
+    answer = state["answer"]
+
+    if "INSUFFICIENT_INFORMATION" in answer:
+        return {
+            "answer_found": "no"
+        }
+
+    return {
+        "answer_found": "yes"
+    }
+
+def fallback_node(state: GraphState):
+
+    return {
+        "answer": (
+            "Sorry, I could not find enough information "
+            "to answer your question."
+        )
     }

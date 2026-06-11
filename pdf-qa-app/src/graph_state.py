@@ -8,3 +8,4 @@ class GraphState(TypedDict):
     route: str
     answer: str
     sources: list
+    answer_found: str
