@@ -15,6 +15,8 @@ from src.qa_chain import build_chain
 from src.agent import build_agent
 import src.rag_resources as rag_resources
 from src.graph import graph
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 
 app = FastAPI()
 agent = None
@@ -48,19 +50,28 @@ async def upload_pdf(file: UploadFile = File(...)):
         embeddings = get_embeddings()
         # Vector Store
         vector_db = create_vector_store(chunks, embeddings)
-        retriever = vector_db.as_retriever(
+        bm25_retriever = BM25Retriever.from_documents(chunks)
+        bm25_retriever.k = 5
+        vector_retriever = vector_db.as_retriever(
     search_type="mmr",
     search_kwargs={
         "k": 10,
         "fetch_k": 30
     }
 )
-
-        set_retriever(retriever)
+    
+        hybrid_retriever = EnsembleRetriever(
+            retrievers=[
+                bm25_retriever,
+                vector_retriever
+            ],
+            weights=[0.3, 0.7]
+        )
+        set_retriever(hybrid_retriever)
         qa_chain = build_chain(vector_db)
         set_qa_chain(qa_chain)
         agent = build_agent()
-        rag_resources.retriever = retriever
+        rag_resources.retriever = hybrid_retriever
         rag_resources.qa_chain = qa_chain
 
         return {"message": "PDF uploaded successfully"}
