@@ -1,24 +1,25 @@
 # PDF Q&A Agentic RAG
 
-An Agentic Retrieval-Augmented Generation (RAG) application built with LangChain, FastAPI, React, and Ollama.
+An Agentic Retrieval-Augmented Generation (RAG) application built using LangGraph, FastAPI, React, FAISS, and local/open-source LLMs.
 
-This project was created as a hands-on learning journey to understand:
+The project evolved from a traditional Tool Calling Agent into a LangGraph-based Agentic RAG system capable of:
 
-* RAG (Retrieval-Augmented Generation)
-* Tool Calling
-* Agents
-* LangGraph
-* Agentic AI Systems
+* Retrieval-Augmented Generation (RAG)
+* Document Relevance Grading
+* Conditional Routing
+* Web Search Fallback
+* Source Attribution
+* Retrieval Evaluation
 
-Instead of learning concepts in isolation, the goal is to implement each component incrementally through real projects.
+The goal of this project is to understand how modern AI systems are built internally rather than relying on black-box frameworks.
 
 ---
 
-## Features
+# Features
 
-### PDF Question Answering
+## PDF Question Answering
 
-Upload a PDF and ask questions about its content.
+Upload a PDF and ask questions about its contents.
 
 ```text
 PDF
@@ -31,126 +32,223 @@ FAISS
 ↓
 Retriever
 ↓
-LLM
+LangGraph Workflow
 ↓
 Answer
 ```
 
 ---
 
-### PDF Search Tool
+## Agentic RAG Workflow
 
-Retrieve raw chunks from the uploaded PDF.
-
-Example:
+The system evaluates retrieved documents before generating an answer.
 
 ```text
-User:
-Show me the text related to leave policy.
-
-Tool:
-pdf_search
-```
-
-Returns relevant passages directly from the document.
-
----
-
-### RAG Answer Tool
-
-Answers questions using retrieved context from the uploaded PDF.
-
-Example:
-
-```text
-User:
-What is the notice period?
-
-Tool:
-rag_answer
-```
-
----
-
-### Web Search Tool
-
-Uses SERP API to search the web for external or current information.
-
-Example:
-
-```text
-User:
-Who is the current RBI Governor?
-
-Tool:
-web_search
-```
-
----
-
-### Tool Calling Agent
-
-An agent automatically selects the most appropriate tool:
-
-```text
-User Question
+Question
 ↓
-Agent
-├── pdf_search
-├── rag_answer
-└── web_search
+Retrieve
 ↓
-Response
+Document Grader
+↓
+Relevant?
+├── Yes → RAG
+└── No  → Web Search
+↓
+Answer
+```
+
+This enables:
+
+* Better retrieval validation
+* Dynamic routing
+* Reduced hallucinations
+* Improved answer quality
+
+---
+
+## Document Grading
+
+Retrieved documents are evaluated using an LLM.
+
+The grader determines:
+
+```text
+Does the retrieved context contain information
+useful for answering the user's question?
+```
+
+Output:
+
+```text
+yes
+or
+no
+```
+
+This decision controls routing inside the graph.
+
+---
+
+## Web Search Fallback
+
+If relevant information is not found in the PDF:
+
+```text
+Question
+↓
+Retrieve
+↓
+Grade = No
+↓
+Web Search
+↓
+Answer
+```
+
+This ensures the system can answer both PDF-specific and general knowledge questions.
+
+---
+
+## Source Attribution
+
+Every response contains information about its source.
+
+Example:
+
+```text
+📄 PDF
+```
+
+or
+
+```text
+🌐 Web
+```
+
+Backend Response:
+
+```json
+{
+  "answer": "...",
+  "source": "pdf"
+}
 ```
 
 ---
 
-### Modern Frontend
+## Retrieved Source Display
 
-Built using:
+Retrieved chunks are displayed below responses.
 
-* React
-* Vite
-* TailwindCSS
-* Axios
+Example:
+
+```text
+Sources
+
+Page 13
+Tom M. Mitchell's Definition...
+
+Page 19
+Spam Classification Example...
+```
+
+This improves transparency and debugging.
 
 ---
 
-## Tech Stack
+# Architecture
 
-### Backend
+## LangGraph Workflow
+
+```text
+Question
+↓
+Retrieve Node
+↓
+Document Grader
+↓
+Relevant?
+├── Yes
+│   ↓
+│   RAG Node
+│
+└── No
+    ↓
+    Web Search Node
+
+↓
+Final Answer
+```
+
+---
+
+## Graph State
+
+```python
+{
+    "question": str,
+    "documents": list,
+    "relevance": str,
+    "answer": str,
+    "route": str,
+    "sources": list
+}
+```
+
+---
+
+# Tech Stack
+
+## Backend
 
 * Python
 * FastAPI
 * LangChain
-* Ollama
+* LangGraph
 
-### Frontend
+## Frontend
 
 * React
 * Vite
 * TailwindCSS
 * Axios
 
-### LLM
+## LLMs
+
+Local:
 
 ```text
+qwen2.5:3b
 gemma4:e4b
 ```
 
-### Embedding Model
+Cloud:
+
+```text
+Gemini 2.5 Flash
+```
+
+## Embedding Models
+
+Local:
 
 ```text
 nomic-embed-text
 ```
 
-### Vector Database
+Cloud:
+
+```text
+models/gemini-embedding-001
+```
+
+## Vector Database
 
 ```text
 FAISS
 ```
 
-### Search Provider
+## Search Provider
 
 ```text
 SERP API
@@ -158,183 +256,7 @@ SERP API
 
 ---
 
-## Architecture
-
-```text
-React Frontend
-        │
-        ▼
-FastAPI Backend
-        │
-        ▼
-Tool Calling Agent
-        │
-        ├──────────────┐
-        ▼              ▼
-   PDF Tools      Web Search
-        │              │
-        ▼              ▼
-     FAISS          SERP API
-        │
-        ▼
-     Ollama
-```
-
----
-
-## Project Structure
-
-```text
-pdf-qa-rag/
-│
-├── backend/
-│   └── main.py
-│
-├── data/
-│   └── uploaded_pdfs/
-│
-├── src/
-│   ├── loader.py
-│   ├── splitter.py
-│   ├── embeddings.py
-│   ├── vector_store.py
-│   ├── qa_chain.py
-│   ├── tools.py
-│   └── agent.py
-│
-└── frontend/
-    ├── src/
-    │   ├── App.jsx
-    │   ├── api.js
-    │   └── components/
-```
-
----
-
-## Installation
-
-### Clone Repository
-
-```bash
-git clone <repo-url>
-cd pdf-qa-rag
-```
-
----
-
-### Create Virtual Environment
-
-```bash
-python -m venv venv
-```
-
-Activate:
-
-#### Windows
-
-```bash
-venv\Scripts\activate
-```
-
-#### Linux / Mac
-
-```bash
-source venv/bin/activate
-```
-
----
-
-### Install Backend Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### Install Ollama Models
-
-Embedding Model:
-
-```bash
-ollama pull nomic-embed-text
-```
-
-LLM:
-
-```bash
-ollama pull gemma4:e4b
-```
-
----
-
-### Configure Environment Variables
-
-Create:
-
-```text
-.env
-```
-
-Add:
-
-```env
-SERP_API_KEY=your_serp_api_key
-```
-
----
-
-## Running the Backend
-
-Start FastAPI:
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-Backend runs at:
-
-```text
-http://localhost:8000
-```
-
-API Docs:
-
-```text
-http://localhost:8000/docs
-```
-
----
-
-## Running the Frontend
-
-Navigate to frontend:
-
-```bash
-cd frontend
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start development server:
-
-```bash
-npm run dev
-```
-
-Frontend runs at:
-
-```text
-http://localhost:5173
-```
-
----
-
-## Current Learning Progress
+# Current Capabilities
 
 Completed:
 
@@ -343,77 +265,124 @@ Completed:
 * Embeddings
 * FAISS Vector Store
 * Retriever
-* RAG Pipeline
-* PDF Search Tool
-* Web Search Tool
-* Tool Calling Agent
-* FastAPI Backend
-* React Frontend
+* LangGraph Migration
+* Document Grading
+* Conditional Routing
+* Web Search Fallback
+* Source Attribution
+* Source Display
+* Structured Output Parsing
+* Retrieval Debugging
+* Performance Benchmarking
+* Gemini Integration
 
 ---
 
-## Next Milestones
+# Retrieval Improvements
 
-### LangGraph Router
+Implemented:
 
-```text
-START
-↓
-Router Node
-├── PDF Route
-└── Web Route
-↓
-Answer Node
-↓
-END
-```
+* Retrieval diagnostics
+* Ranking analysis
+* Top-k filtering
+* Document grading optimization
+* MMR experimentation
 
----
+Current focus:
 
-### Agentic RAG
-
-* Query Routing
-* Query Rewriting
-* Multi-Step Retrieval
-* Tool Chaining
+* Retrieval ranking
+* Query rewriting
+* Hybrid Search
+* Corrective RAG
 
 ---
 
-### Self-Correcting RAG
+# Future Roadmap
 
-* Retrieval Evaluation
-* Hallucination Detection
-* Retry Logic
-* Corrective RAG (CRAG)
-
----
-
-### Research Agent
-
-Future goal:
+## Query Rewriting
 
 ```text
 Question
 ↓
-Planner
+Rewrite Query
 ↓
-Web Search
+Retrieve
 ↓
-PDF Search
+Answer
+```
+
+Example:
+
+```text
+Tom M. Mitchell's Definition
+```
+
 ↓
-Summarization
-↓
-Final Report
+
+```text
+Tom M. Mitchell machine learning definition
 ```
 
 ---
 
-## Learning Philosophy
+## Hybrid Search
 
-This project is intentionally built incrementally:
+Combine:
 
 ```text
-PDF Loader
+Vector Search
++
+BM25
+```
+
+to improve retrieval of names, entities, and exact keywords.
+
+---
+
+## Corrective RAG (CRAG)
+
+```text
+Question
+↓
+Retrieve
+↓
+Grade
+↓
+Not Relevant
+↓
+Rewrite
+↓
+Retrieve Again
+↓
+Answer
+```
+
+---
+
+## Self-Correcting RAG
+
+```text
+Question
+↓
+Retrieve
+↓
+Generate
+↓
+Answer Grader
+↓
+Retry if Needed
+↓
+Final Answer
+```
+
+---
+
+# Learning Journey
+
+This project was intentionally built incrementally:
+
+```text
+PDF Loading
 ↓
 Chunking
 ↓
@@ -425,13 +394,15 @@ Retriever
 ↓
 RAG
 ↓
-Tools
-↓
-Agents
+Tool Calling Agent
 ↓
 LangGraph
 ↓
-Agentic Systems
+Agentic RAG
+↓
+Corrective RAG
+↓
+Self-Correcting Systems
 ```
 
-The focus is understanding how modern AI applications are built internally rather than simply using pre-built frameworks.
+The objective is to understand how production-grade AI applications are built from first principles rather than relying solely on pre-built abstractions.
