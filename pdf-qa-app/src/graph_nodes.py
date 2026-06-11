@@ -30,13 +30,49 @@ answer_grader_llm = grader_llm.with_structured_output(
     GradeAnswer
 )
 
+def rewrite_query_node(state: GraphState):
+
+    question = state["question"]
+
+    prompt = f"""
+You are a query rewriting assistant.
+
+Rewrite the user's question so that it is
+optimized for document retrieval.
+
+If the question is already clear and specific,
+return it unchanged.
+
+Only rewrite if it would improve retrieval.
+
+Rules:
+- Preserve meaning.
+- Add missing context when obvious.
+- Expand abbreviations.
+- Make the query more explicit.
+- Return ONLY the rewritten query.
+
+Question:
+{question}
+"""
+
+    rewritten = answer_llm.invoke(prompt).content.strip()
+
+    print("\nQUERY REWRITE")
+    print("Original :", question)
+    print("Rewritten:", rewritten)
+
+    return {
+        "rewritten_question": rewritten
+    }
+
 def retrieve_node(state: GraphState):
     start = time.time()
 
     print("\nRETRIEVE NODE")
     print(state["question"])
 
-    question = state["question"]
+    question = state["rewritten_question"]
     docs = rag_resources.retriever.invoke(question)
     sources = []
 

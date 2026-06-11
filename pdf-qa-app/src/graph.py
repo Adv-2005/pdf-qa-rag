@@ -8,7 +8,8 @@ from src.graph_nodes import (
     rag_node,
     web_node,
     answer_validation_node,
-    fallback_node
+    fallback_node,
+    rewrite_query_node
 )
 
 def route_question(state):
@@ -20,6 +21,11 @@ def route_answer(state):
     return state["answer_found"]
 
 workflow = StateGraph(GraphState)
+
+workflow.add_node(
+    "rewrite",
+    rewrite_query_node
+)
 
 workflow.add_node(
     "retrieve",
@@ -51,7 +57,11 @@ workflow.add_node(
     fallback_node
 )
 
-workflow.set_entry_point(
+workflow.set_entry_point("rewrite")
+
+
+workflow.add_edge(
+    "rewrite",
     "retrieve"
 )
 
