@@ -4,7 +4,8 @@ import ChatInput from "./ChatInput";
 
 function ChatWindow({
   messages,
-  setMessages
+  setMessages,
+  sessionId
 }) {
 
   const [loading, setLoading] =
@@ -39,6 +40,7 @@ function ChatWindow({
         messages={messages}
         setMessages={setMessages}
         setLoading={setLoading}
+        sessionId={sessionId}
       />
 
     </div>

@@ -1,11 +1,11 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 import src.rag_resources as rag_resources
 from src.tools import web_search
 from src.graph_state import GraphState
 from typing import Literal
 from pydantic import BaseModel
 import time
-
+from langchain_core.messages import HumanMessage, AIMessage
 
 class GradeDocuments(BaseModel):
     binary_score: Literal["yes", "no"]
@@ -13,13 +13,13 @@ class GradeDocuments(BaseModel):
 class GradeAnswer(BaseModel):
     answer_found: Literal["yes", "no"]
 
-answer_llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+answer_llm = ChatOpenAI(
+    model="gpt-4o-mini",
     temperature=0
 )
 
-grader_llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+grader_llm = ChatOpenAI(
+    model="gpt-4o-mini",
     temperature=0
 )
 
@@ -31,29 +31,35 @@ answer_grader_llm = grader_llm.with_structured_output(
 )
 
 def rewrite_query_node(state: GraphState):
+    print("\nSTATE KEYS")
+    print(state.keys())
+    messages = state.get("messages", [])
 
     question = state["question"]
 
     prompt = f"""
 You are a query rewriting assistant.
 
-Rewrite the user's question so that it is
-optimized for document retrieval.
+Rewrite the latest user question so it can be
+understood without the conversation history.
 
 If the question is already clear and specific,
 return it unchanged.
 
 Only rewrite if it would improve retrieval.
 
+Conversation History:
+{messages}
+
+Latest Question:
+{question}
+
 Rules:
 - Preserve meaning.
-- Add missing context when obvious.
-- Expand abbreviations.
-- Make the query more explicit.
+- Use conversation context when needed.
+- Resolve references like:
+  "it", "that", "he", "they", "this concept".
 - Return ONLY the rewritten query.
-
-Question:
-{question}
 """
 
     rewritten = answer_llm.invoke(prompt).content.strip()
@@ -70,10 +76,21 @@ def retrieve_node(state: GraphState):
     start = time.time()
 
     print("\nRETRIEVE NODE")
+
+    print("Original Query:")
     print(state["question"])
+
+    print("\nRewritten Query:")
+    
+    print(state["rewritten_question"])
+    print("\nTOP RETRIEVED CHUNKS:")
 
     question = state["rewritten_question"]
     docs = rag_resources.retriever.invoke(question)
+    print("\nTOP RETRIEVED CHUNKS:")
+    for i, doc in enumerate(docs[:3]):
+        print(f"\nRank {i+1}")
+        print(doc.page_content[:200])
     sources = []
 
     for doc in docs:
@@ -99,7 +116,7 @@ def grade_documents(state: GraphState):
     start = time.time()
 
 
-    question = state["question"]
+    question = state["rewritten_question"]
 
     docs = state["documents"][:3]
     print("\n=== DOCUMENTS BEING GRADED ===\n")
@@ -159,7 +176,7 @@ def rag_node(state: GraphState):
     start = time.time()
     print("USING RAG")
 
-    question = state["question"]
+    question = state["rewritten_question"]
 
     context = "\n\n".join(
         [doc.page_content for doc in state["documents"]]
@@ -184,17 +201,27 @@ Context:
     print(
         f"RAG took {time.time()-start:.2f}s"
     )
-
+    # messages = state.get("messages", [])
+    # messages.append(
+    #     HumanMessage(content=question)
+    # )
+    # messages.append(
+    #     AIMessage(content=result)
+    # )
     return {
         "answer": result,
-        "route": "pdf"
+        "route": "pdf",
+        "messages": [
+        HumanMessage(content=question),
+        AIMessage(content=result)
+    ]
     }
 
 def web_node(state: GraphState):
     start = time.time()
     print("Using WEB SEARCH")
 
-    question = state["question"]
+    question = state["rewritten_question"]
 
     search_results = web_search.invoke(
         {"query": question}
@@ -220,21 +247,37 @@ Search Results:
     print(
         f"Web search took {time.time()-start:.2f}s"
     )
+    # messages = state.get("messages", [])
+    # messages.append(
+    #     HumanMessage(content=question)
+    # )
+    # messages.append(
+    #     AIMessage(content=answer)
+    # )
 
     return {
         "answer": answer,
-        "route": "web"
-    }
+        "route": "web",
+        "messages": [
+        HumanMessage(content=question),
+        AIMessage(content=answer)
+    ]
+}
 
 def answer_validation_node(state: GraphState):
 
     answer = state["answer"]
-
+    print("\n===== ANSWER VALIDATION =====")
+    print(answer)
+    print(state["answer"])
     if "INSUFFICIENT_INFORMATION" in answer:
+        print("ROUTE -> FALLBACK")
+        print("answer_found = no")
         return {
             "answer_found": "no"
         }
-
+    print("ROUTE -> END")
+    print("answer_found = yes")
     return {
         "answer_found": "yes"
     }

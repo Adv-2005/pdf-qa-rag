@@ -1,6 +1,6 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 def get_embeddings():
-    return GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001"
+    return OpenAIEmbeddings(
+        model="text-embedding-3-small"
     )

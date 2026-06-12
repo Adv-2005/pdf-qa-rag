@@ -4,7 +4,8 @@ import API from "../api";
 function ChatInput({
   messages,
   setMessages,
-  setLoading
+  setLoading,
+  sessionId
 }) {
 
   const [question, setQuestion] =
@@ -38,7 +39,8 @@ function ChatInput({
           await API.post(
             "/chat",
             {
-              question
+              question,
+              session_id: sessionId
             }
           );
 

@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 
 from src.graph_state import GraphState
+from langgraph.checkpoint.memory import MemorySaver
 
 from src.graph_nodes import (
     retrieve_node,
@@ -11,7 +12,6 @@ from src.graph_nodes import (
     fallback_node,
     rewrite_query_node
 )
-
 def route_question(state):
 
     return state["relevance"]
@@ -102,5 +102,9 @@ workflow.add_edge(
     "fallback",
     END
 )
+memory = MemorySaver()
 
-graph = workflow.compile()
+
+graph = workflow.compile(
+    checkpointer=memory
+)

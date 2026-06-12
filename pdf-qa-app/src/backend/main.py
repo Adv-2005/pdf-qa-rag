@@ -96,6 +96,10 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/chat")
 async def chat(data: dict):
+    session_id = data.get(
+    "session_id",
+    "default-session"
+)
     if rag_resources.retriever is None:
         return {
             "error": "Please upload a PDF first."
@@ -106,6 +110,12 @@ async def chat(data: dict):
     response = graph.invoke(
         {
             "question": question
+        },
+            config={
+            "configurable": {
+                "thread_id": session_id
+        }
+    
         }
     )
 
