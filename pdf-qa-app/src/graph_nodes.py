@@ -146,6 +146,7 @@ The context does NOT need to contain the complete answer.
 
 If at least one document contains information that would help answer the question,
 return "yes".
+Return "yes" if user explicitly asks for search in pdf or look for information in pdf etc.
 
 Return "no" only if none of the retrieved context is relevant.
 Return "no" if the user explicitly asks for web search,look on the internet, search online etc
