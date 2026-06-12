@@ -114,9 +114,13 @@ async def chat(data: dict):
             config={
             "configurable": {
                 "thread_id": session_id
+        },
+            "run_name": "pdf_qa_graph",
+            "metadata": {
+            "session_id": session_id
         }
-    
         }
+        
     )
 
     return {
