@@ -1,17 +1,20 @@
 # PDF Q&A Agentic RAG
 
-An Agentic Retrieval-Augmented Generation (RAG) application built using LangGraph, FastAPI, React, FAISS, and local/open-source LLMs.
+An Agentic Retrieval-Augmented Generation (RAG) application built using LangGraph, FastAPI, React, FAISS, BM25, OpenAI, and LangSmith.
 
-The project evolved from a traditional Tool Calling Agent into a LangGraph-based Agentic RAG system capable of:
+The project evolved from a traditional Tool Calling Agent into a stateful LangGraph-based Agentic RAG system capable of:
 
-* Retrieval-Augmented Generation (RAG)
+* Hybrid Retrieval (BM25 + Vector Search)
+* Query Rewriting
+* Conversational Memory
 * Document Relevance Grading
 * Conditional Routing
 * Web Search Fallback
+* Hallucination Prevention
 * Source Attribution
-* Retrieval Evaluation
+* LangSmith Observability
 
-The goal of this project is to understand how modern AI systems are built internally rather than relying on black-box frameworks.
+The goal of this project is to understand how production-grade AI systems are built internally rather than relying on black-box frameworks.
 
 ---
 
@@ -30,7 +33,7 @@ Embeddings
 ↓
 FAISS
 ↓
-Retriever
+Hybrid Retriever
 ↓
 LangGraph Workflow
 ↓
@@ -39,38 +42,139 @@ Answer
 
 ---
 
-## Agentic RAG Workflow
+## Hybrid Retrieval
 
-The system evaluates retrieved documents before generating an answer.
+The system combines:
+
+```text
+BM25 Keyword Search
++
+MMR Vector Search
+```
+
+Implementation:
+
+```python
+EnsembleRetriever(
+    retrievers=[
+        bm25_retriever,
+        vector_retriever
+    ],
+    weights=[0.5, 0.5]
+)
+```
+
+Benefits:
+
+* Better exact keyword matching
+* Improved entity retrieval
+* Stronger semantic search
+* Better ranking quality
+
+---
+
+## Conversational Memory
+
+Chat sessions maintain context across multiple turns.
+
+Example:
+
+```text
+User:
+What are the types of feedback?
+
+Assistant:
+Direct feedback
+Indirect feedback
+
+User:
+Explain it
+```
+
+The system rewrites:
+
+```text
+Explain it
+```
+
+into:
+
+```text
+Can you explain the types of feedback?
+```
+
+before retrieval.
+
+Memory is implemented using:
+
+```python
+MemorySaver
+```
+
+and session-based thread persistence.
+
+---
+
+## History-Aware Query Rewriting
+
+Before retrieval, every question passes through a rewrite stage.
 
 ```text
 Question
 ↓
+Rewrite
+↓
 Retrieve
-↓
-Document Grader
-↓
-Relevant?
-├── Yes → RAG
-└── No  → Web Search
-↓
-Answer
 ```
 
-This enables:
+Purpose:
 
-* Better retrieval validation
-* Dynamic routing
-* Reduced hallucinations
-* Improved answer quality
+* Resolve references
+* Improve retrieval quality
+* Handle follow-up questions
+* Improve ranking
+
+Example:
+
+```text
+Who defined it?
+```
+
+↓
+
+```text
+Who defined machine learning?
+```
 
 ---
 
-## Document Grading
+## Agentic RAG Workflow
+
+Current LangGraph architecture:
+
+```text
+Question
+↓
+Query Rewrite
+↓
+Retrieve
+↓
+Document Grader
+├── yes → RAG
+└── no  → Web Search
+↓
+Answer Validation
+├── yes → Return Answer
+└── no  → Fallback
+```
+
+---
+
+## Document Relevance Grading
 
 Retrieved documents are evaluated using an LLM.
 
-The grader determines:
+Question:
 
 ```text
 Does the retrieved context contain information
@@ -85,7 +189,7 @@ or
 no
 ```
 
-This decision controls routing inside the graph.
+This controls graph routing.
 
 ---
 
@@ -105,13 +209,40 @@ Web Search
 Answer
 ```
 
-This ensures the system can answer both PDF-specific and general knowledge questions.
+The system can therefore answer:
+
+* PDF-specific questions
+* General knowledge questions
+* Missing-information queries
+
+---
+
+## Hallucination Prevention
+
+The RAG node is instructed to return:
+
+```text
+INSUFFICIENT_INFORMATION
+```
+
+when the answer is not supported by context.
+
+An answer validation stage checks generated responses.
+
+Fallback:
+
+```text
+Sorry, I could not find enough information
+to answer your question.
+```
+
+This reduces hallucinated answers.
 
 ---
 
 ## Source Attribution
 
-Every response contains information about its source.
+Every response contains its source.
 
 Example:
 
@@ -163,21 +294,23 @@ This improves transparency and debugging.
 ```text
 Question
 ↓
-Retrieve Node
+Rewrite Query
 ↓
-Document Grader
+Retrieve
 ↓
-Relevant?
-├── Yes
+Grade Documents
+├── Relevant
 │   ↓
-│   RAG Node
+│   RAG
 │
-└── No
+└── Not Relevant
     ↓
-    Web Search Node
+    Web Search
 
 ↓
-Final Answer
+Answer Validation
+↓
+Fallback (if needed)
 ```
 
 ---
@@ -185,14 +318,25 @@ Final Answer
 ## Graph State
 
 ```python
-{
-    "question": str,
-    "documents": list,
-    "relevance": str,
-    "answer": str,
-    "route": str,
-    "sources": list
-}
+class GraphState(TypedDict):
+
+    messages: list
+
+    question: str
+
+    rewritten_question: str
+
+    documents: list
+
+    relevance: str
+
+    answer: str
+
+    answer_found: str
+
+    route: str
+
+    sources: list
 ```
 
 ---
@@ -213,45 +357,37 @@ Final Answer
 * TailwindCSS
 * Axios
 
-## LLMs
-
-Local:
+## LLM
 
 ```text
-qwen2.5:3b
-gemma4:e4b
+gpt-4o-mini
 ```
 
-Cloud:
+## Embeddings
 
 ```text
-Gemini 2.5 Flash
+text-embedding-3-small
 ```
 
-## Embedding Models
-
-Local:
-
-```text
-nomic-embed-text
-```
-
-Cloud:
-
-```text
-models/gemini-embedding-001
-```
-
-## Vector Database
+## Retrieval
 
 ```text
 FAISS
+BM25
+MMR
+EnsembleRetriever
 ```
 
 ## Search Provider
 
 ```text
 SERP API
+```
+
+## Observability
+
+```text
+LangSmith
 ```
 
 ---
@@ -262,100 +398,78 @@ Completed:
 
 * PDF Loading
 * Text Chunking
-* Embeddings
+* OpenAI Embeddings
 * FAISS Vector Store
-* Retriever
+* BM25 Retrieval
+* Hybrid Search
+* MMR Search
+* Query Rewriting
+* Chat Memory
+* History-Aware Retrieval
 * LangGraph Migration
 * Document Grading
 * Conditional Routing
 * Web Search Fallback
+* Hallucination Prevention
+* Answer Validation
 * Source Attribution
 * Source Display
 * Structured Output Parsing
-* Retrieval Debugging
+* LangSmith Tracing
+* Retrieval Diagnostics
 * Performance Benchmarking
-* Gemini Integration
 
 ---
 
-# Retrieval Improvements
+# Current Challenges
 
-Implemented:
-
-* Retrieval diagnostics
-* Ranking analysis
-* Top-k filtering
-* Document grading optimization
-* MMR experimentation
-
-Current focus:
-
-* Retrieval ranking
-* Query rewriting
-* Hybrid Search
-* Corrective RAG
+* Document grader can be overly lenient when concepts are only mentioned briefly.
+* Retrieval ranking can still occasionally bury the best chunk.
+* Explicit web-search requests currently rely on prompt logic rather than a dedicated routing node.
+* Answer grading requires further refinement.
 
 ---
 
 # Future Roadmap
 
-## Query Rewriting
+## Dedicated Web Search Router
 
 ```text
 Question
 ↓
-Rewrite Query
-↓
-Retrieve
-↓
-Answer
-```
-
-Example:
-
-```text
-Tom M. Mitchell's Definition
-```
-
-↓
-
-```text
-Tom M. Mitchell machine learning definition
+Web Search Requested?
+├── Yes → Web
+└── No  → Retrieval
 ```
 
 ---
 
-## Hybrid Search
-
-Combine:
+## Three-Way Document Grading
 
 ```text
-Vector Search
-+
-BM25
+sufficient
+partial
+none
 ```
 
-to improve retrieval of names, entities, and exact keywords.
+Routing:
+
+```text
+sufficient → RAG
+partial → Web
+none → Web
+```
 
 ---
 
-## Corrective RAG (CRAG)
+## LangSmith Evaluation
 
-```text
-Question
-↓
-Retrieve
-↓
-Grade
-↓
-Not Relevant
-↓
-Rewrite
-↓
-Retrieve Again
-↓
-Answer
-```
+Build evaluation datasets for:
+
+* Retrieval Quality
+* Routing Accuracy
+* Answer Correctness
+* Hallucination Detection
 
 ---
 
@@ -370,16 +484,24 @@ Generate
 ↓
 Answer Grader
 ↓
-Retry if Needed
-↓
-Final Answer
+Good?
+├── Yes → Return
+└── No
+      ↓
+      Rewrite
+      ↓
+      Retrieve Again
 ```
 
 ---
 
-# Learning Journey
+## Cross-Encoder Reranking
 
-This project was intentionally built incrementally:
+Improve retrieval ranking quality by reranking retrieved chunks before generation.
+
+---
+
+# Learning Journey
 
 ```text
 PDF Loading
@@ -400,9 +522,13 @@ LangGraph
 ↓
 Agentic RAG
 ↓
-Corrective RAG
+Hybrid Search
+↓
+Conversational Memory
+↓
+Observability
 ↓
 Self-Correcting Systems
 ```
 
-The objective is to understand how production-grade AI applications are built from first principles rather than relying solely on pre-built abstractions.
+The objective of this project is to understand how modern AI applications are built from first principles rather than relying solely on pre-built abstractions.
