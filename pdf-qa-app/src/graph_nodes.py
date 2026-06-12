@@ -23,10 +23,10 @@ grader_llm = ChatOpenAI(
     temperature=0
 )
 
-structured_llm = grader_llm.with_structured_output(
+document_grader_structured_llm = grader_llm.with_structured_output(
     GradeDocuments
 )
-answer_grader_llm = grader_llm.with_structured_output(
+answer_grader_structured_llm = grader_llm.with_structured_output(
     GradeAnswer
 )
 
@@ -118,7 +118,7 @@ def grade_documents(state: GraphState):
 
     question = state["rewritten_question"]
 
-    docs = state["documents"][:3]
+    docs = state["documents"][:5]
     print("\n=== DOCUMENTS BEING GRADED ===\n")
 
     for i, doc in enumerate(state["documents"]):
@@ -160,7 +160,7 @@ yes -> if the documents are relevant
 no -> if the documents are not relevant
 """
 
-    result = structured_llm.invoke(prompt)
+    result = document_grader_structured_llm.invoke(prompt)
 
     relevance = result.binary_score
     
@@ -201,13 +201,6 @@ Context:
     print(
         f"RAG took {time.time()-start:.2f}s"
     )
-    # messages = state.get("messages", [])
-    # messages.append(
-    #     HumanMessage(content=question)
-    # )
-    # messages.append(
-    #     AIMessage(content=result)
-    # )
     return {
         "answer": result,
         "route": "pdf",
@@ -247,14 +240,6 @@ Search Results:
     print(
         f"Web search took {time.time()-start:.2f}s"
     )
-    # messages = state.get("messages", [])
-    # messages.append(
-    #     HumanMessage(content=question)
-    # )
-    # messages.append(
-    #     AIMessage(content=answer)
-    # )
-
     return {
         "answer": answer,
         "route": "web",
