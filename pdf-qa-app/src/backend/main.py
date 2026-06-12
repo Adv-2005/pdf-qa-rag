@@ -11,8 +11,6 @@ from src.loader import load_pdf
 from src.splitter import split_documents
 from src.vector_store import create_vector_store
 from src.embeddings import get_embeddings
-from src.qa_chain import build_chain
-from src.agent import build_agent
 import src.rag_resources as rag_resources
 from src.graph import graph
 from langchain_community.retrievers import BM25Retriever
@@ -68,11 +66,7 @@ async def upload_pdf(file: UploadFile = File(...)):
             weights=[0.3, 0.7]
         )
         set_retriever(hybrid_retriever)
-        qa_chain = build_chain(vector_db)
-        set_qa_chain(qa_chain)
-        agent = build_agent()
         rag_resources.retriever = hybrid_retriever
-        rag_resources.qa_chain = qa_chain
 
         return {"message": "PDF uploaded successfully"}
     except ConnectionError as exc:
