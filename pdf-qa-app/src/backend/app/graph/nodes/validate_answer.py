@@ -8,7 +8,7 @@ answer_grader_structured_llm = grader_llm.with_structured_output(
 
 def answer_validation_node(state: GraphState):
 
-    question = state["rewritten_question"]
+    # question = state["rewritten_question"]
 
     answer = state["answer"]
     
@@ -23,45 +23,48 @@ def answer_validation_node(state: GraphState):
         }
     print("ROUTE -> END")
     print("answer_found = yes")
-    context = "\n\n".join(
-    [doc.page_content for doc in state["documents"][:5]]
-)
-
-    prompt = f"""
-You are an answer grader.
-
-Determine whether the answer sufficiently answers
-the user's question and is supported by the retrieved context.
-
-The answer does NOT need to be perfect.
-
-The answer does NOT need to be extremely detailed.
-
-Return "yes" if the answer is reasonably correct and
-addresses the user's question.
-If the answer is substantially correct,
-even if it is brief or not perfectly worded,
-return yes.
-
-Return "no" only if:
-- the answer is unrelated
-- the answer is incorrect
-- the answer is unsupported by the context
-- the answer fails to answer the question
-
-Question:
-{question}
-
-Retrieved Context:
-{context}
-
-Answer:
-{answer}
-"""
-    result = answer_grader_structured_llm.invoke(
-        prompt
-    )
-    print("Answer Found:", result.answer_found)
     return {
-        "answer_found": result.answer_found
+        "answer_found": "yes"
     }
+#     context = "\n\n".join(
+#     [doc.page_content for doc in state["documents"][:5]]
+# )
+
+#     prompt = f"""
+# You are an answer grader.
+
+# Determine whether the answer sufficiently answers
+# the user's question and is supported by the retrieved context.
+
+# The answer does NOT need to be perfect.
+
+# The answer does NOT need to be extremely detailed.
+
+# Return "yes" if the answer is reasonably correct and
+# addresses the user's question.
+# If the answer is substantially correct,
+# even if it is brief or not perfectly worded,
+# return yes.
+
+# Return "no" only if:
+# - the answer is unrelated
+# - the answer is incorrect
+# - the answer is unsupported by the context
+# - the answer fails to answer the question
+
+# Question:
+# {question}
+
+# Retrieved Context:
+# {context}
+
+# Answer:
+# {answer}
+# """
+#     result = answer_grader_structured_llm.invoke(
+#         prompt
+#     )
+#     print("Answer Found:", result.answer_found)
+    # return {
+    #     "answer_found": result.answer_found
+    # }

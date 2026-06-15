@@ -1,6 +1,6 @@
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
 
-def get_embeddings():
-    return OpenAIEmbeddings(
-        model="text-embedding-3-small"
-    )
+# def get_embeddings():
+#     return OpenAIEmbeddings(
+#         model="text-embedding-3-small"
+#     )
