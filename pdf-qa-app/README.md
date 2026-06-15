@@ -324,7 +324,9 @@ Fallback (if needed)
 
 ---
 
-# Project Structure
+## Project Structure
+
+```text
 backend/
 │
 ├── app/
@@ -382,10 +384,9 @@ backend/
 ├── tests/
 │
 ├── main.py
-│
 ├── requirements.txt
-│
 └── .env
+```
 
 # Installation
 
@@ -412,11 +413,11 @@ backend/
 * pip install -r requirements.txt
 
 ## Configure Environment Variables
-OPENAI_API_KEY=your_openai_api_key
+* OPENAI_API_KEY=your_openai_api_key
 
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your_langsmith_api_key
-LANGCHAIN_PROJECT=pdf-qa-agentic-rag
+* LANGCHAIN_TRACING_V2=true
+* LANGCHAIN_API_KEY=your_langsmith_api_key
+* LANGCHAIN_PROJECT=pdf-qa-agentic-rag
 
 ## Start the Backend
 * uvicorn main:app --reload
