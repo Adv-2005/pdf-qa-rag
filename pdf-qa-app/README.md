@@ -154,18 +154,27 @@ Current LangGraph architecture:
 
 ```text
 Question
-↓
-Query Rewrite
-↓
-Retrieve
-↓
+    │
+    ▼
+Query Rewriter
+    │
+    ▼
+Hybrid Retrieval
+    │
+    ▼
 Document Grader
-├── yes → RAG
-└── no  → Web Search
-↓
+ ┌──────┴──────┐
+ │             │
+ ▼             ▼
+RAG       Web Search
+ │             │
+ └──────┬──────┘
+        ▼
 Answer Validation
-├── yes → Return Answer
-└── no  → Fallback
+ ┌──────┴──────┐
+ │             │
+ ▼             ▼
+END       Fallback
 ```
 
 ---
@@ -315,31 +324,110 @@ Fallback (if needed)
 
 ---
 
-## Graph State
+# Project Structure
+backend/
+│
+├── app/
+│   │
+│   ├── api/
+│   │   └── routes.py
+│   │
+│   ├── graph/
+│   │   ├── workflow.py
+│   │   ├── state.py
+│   │   │
+│   │   ├── nodes/
+│   │   │   ├── rewrite.py
+│   │   │   ├── retrieve.py
+│   │   │   ├── grade_documents.py
+│   │   │   ├── rag.py
+│   │   │   ├── web_search.py
+│   │   │   ├── validate_answer.py
+│   │   │   └── fallback.py
+│   │   │
+│   │   └── edges/
+│   │       └── routing.py
+│   │
+│   ├── retrievers/
+│   │   ├── vector_store.py
+│   │   ├── hybrid_retriever.py
+│   │   └── reranker.py
+│   │
+│   ├── llms/
+│   │   ├── gemini.py
+│   │   └── prompts.py
+│   │
+│   ├── schemas/
+│   │   ├── requests.py
+│   │   ├── grader.py
+│   │   └── answer.py
+│   │
+│   ├── services/
+│   │   ├── ingestion.py
+│   │   ├── chat_service.py
+│   │   ├── loader.py
+│   │   ├── chunking.py
+│   │   └── embeddings.py
+│   │
+│   ├── config/
+│   │   └── settings.py
+│   │
+│   └── utils/
+│       ├── rag_resources.py
+│       └── tools.py
+│
+├── data/
+│   └── uploaded_pdfs/
+│
+├── tests/
+│
+├── main.py
+│
+├── requirements.txt
+│
+└── .env
 
-```python
-class GraphState(TypedDict):
+# Installation
 
-    messages: list
+## Clone the Repository
+* git clone https://github.com/Adv-2005/pdf-qa-rag.git
+* cd backend
 
-    question: str
+## Create Virtual Environment
+* python -m venv venv
+* venv\Scripts\activate
 
-    rewritten_question: str
+## Create Virtual Environment
 
-    documents: list
+### Windows
+* python -m venv venv
+* venv\Scripts\activate
 
-    relevance: str
+### Linux/macOS
+* python -m venv venv
 
-    answer: str
+* source venv/bin/activate
 
-    answer_found: str
+## Install Dependencies 
+* pip install -r requirements.txt
 
-    route: str
+## Configure Environment Variables
+OPENAI_API_KEY=your_openai_api_key
 
-    sources: list
-```
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_api_key
+LANGCHAIN_PROJECT=pdf-qa-agentic-rag
 
----
+## Start the Backend
+* uvicorn main:app --reload
+* Backend available at: http://localhost:8000
+
+## Frontend Setup
+* cd frontend
+* npm install 
+* npm run dev
+
+* Frontend available at: http://localhost:5173
 
 # Tech Stack
 
@@ -430,105 +518,3 @@ Completed:
 
 ---
 
-# Future Roadmap
-
-## Dedicated Web Search Router
-
-```text
-Question
-↓
-Web Search Requested?
-├── Yes → Web
-└── No  → Retrieval
-```
-
----
-
-## Three-Way Document Grading
-
-```text
-sufficient
-partial
-none
-```
-
-Routing:
-
-```text
-sufficient → RAG
-partial → Web
-none → Web
-```
-
----
-
-## LangSmith Evaluation
-
-Build evaluation datasets for:
-
-* Retrieval Quality
-* Routing Accuracy
-* Answer Correctness
-* Hallucination Detection
-
----
-
-## Self-Correcting RAG
-
-```text
-Question
-↓
-Retrieve
-↓
-Generate
-↓
-Answer Grader
-↓
-Good?
-├── Yes → Return
-└── No
-      ↓
-      Rewrite
-      ↓
-      Retrieve Again
-```
-
----
-
-## Cross-Encoder Reranking
-
-Improve retrieval ranking quality by reranking retrieved chunks before generation.
-
----
-
-# Learning Journey
-
-```text
-PDF Loading
-↓
-Chunking
-↓
-Embeddings
-↓
-FAISS
-↓
-Retriever
-↓
-RAG
-↓
-Tool Calling Agent
-↓
-LangGraph
-↓
-Agentic RAG
-↓
-Hybrid Search
-↓
-Conversational Memory
-↓
-Observability
-↓
-Self-Correcting Systems
-```
-
-The objective of this project is to understand how modern AI applications are built from first principles rather than relying solely on pre-built abstractions.
