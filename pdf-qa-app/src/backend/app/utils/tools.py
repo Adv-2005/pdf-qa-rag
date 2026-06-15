@@ -16,56 +16,8 @@ def set_retriever(r):
     retriever = r
 
 
-@tool
-def pdf_search(query: str) -> str:
-    """
-    Search the uploaded PDF for relevant information.
-    """
-
-    if retriever is None:
-        return "No PDF loaded."
-
-    docs = retriever.invoke(query)
-
-    results = []
-
-    for doc in docs:
-        page = doc.metadata.get("page", "Unknown")
-
-        results.append(
-            f"Page {page}\n{doc.page_content}"
-        )
-
-    return "\n\n".join(results)
 
 #rag answer tool
-
-qa_chain = None
-
-
-def set_qa_chain(chain):
-    global qa_chain
-    qa_chain = chain
-
-
-@tool
-def rag_answer(query: str) -> str:
-    """
-    Answer questions using the uploaded PDF.
-    Uses retrieval augmented generation (RAG).
-    """
-
-    if qa_chain is None:
-        return "No PDF has been loaded."
-
-    response = qa_chain.invoke(
-        {"input": query}
-    )
-
-    return response.get(
-        "answer",
-        str(response)
-    )
 
 @tool
 def web_search(query: str) -> str:
